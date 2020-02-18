@@ -1,0 +1,189 @@
+---
+title: "Distribution Center Optimization using the Evolutionary Algorithm"
+author: "Tellef Solberg"
+date: "10/2/2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Context
+
+In industries delivering physical goods, it is of great importance to determine the optimal locations for distribution centers and thus minimize the total travelling distance to the demand units. If the company delivering the goods values short response times and incurs high costs on transportation the problem is of even greater importance. Using a mixed integer program with the aim of minimizing the total distance between the distribution centers and demand units, is a solution that has on many occations proven to be useful for analyzing such problems. 
+
+## 2. Problem
+
+In this project we use x-y coordinates on a 2-dimensional plane, insert the demand units and locate the distribution centers in optimal positions. We have in total 25 demand units and 3 distribution centers. 
+
+The problem this project is aiming to solve is: 
+*When we have 25 demand units and assigning 3 distribution centers to serve them, what are the locations that minimizes total travelling distance?*
+
+## 3. Methodology
+
+In order to minimize the total travelling distance for each distribution center, we construct a mixed integer program where we define the decision variables, parameters, constraints and an objective function. The solution of the program will be generated using the *evolutionary algorithm* built into the *Excel solver tool*.
+
+The evolutionary algorithm is an algorithm with a wide range of applications in e.g. in planning, routing and classification. The algorithm relies on the fitness of each individual *i* and determines the optimal solution in a non-deterministic fashion (Moraglio, *Introduction to Natural Computation*). For the sake of project progression we refer to Alberto Moraglio's description of the algorithm provided in the reference list in the last chapter. For now, consider the following description of the algorithm:
+
+1. Generate the initial population *P(0)*
+2. Evaluate the fitness of each individual in *P(0)*
+3. Generate offsprings using *variation operators* to form *P(i)*
+4. Evaluate the fitness of each individual in *P(i)*
+5. Select parents from *P(i)* and *P(i-1)* based on their fitness
+6. Reiterate the algorithm until the halting criteria are satisfied.
+
+Once the algorithm is applied to the mathematical program, we will obtain 3 different xy-coordinates representing the distribution centers, and they will be visualized in the 6th chapter.
+
+
+## 4. Data Description
+
+The input data to the model consists of 25 observations each being a demand unit with distinct x-y coordinates inidcating their different positions on the 2-dimensional plane. A summary of the data is given:
+
+```{r, echo=FALSE}
+xCoord <- c(23,24,8,27,4,28,29,49,16,11,39,14,35,28,11,44,10,1,2,44,46,32,46,45,40)
+yCoord <- c(48,15,44,10,2,12,46,37,30,47,9,2,31,34,36,16,21,25,35,25,41,6,34,49,48)
+xyCoord1 <- cbind(xCoord,yCoord)
+colnames(xyCoord1) <- c("x Coord", "y Coord")
+xyCoord1
+summary(xyCoord1)
+xyCoord1 <- as.data.frame(xyCoord1)
+```
+
+For a richer interpretation of the 25 demand units, we visualize them on a 2-dimensional plane using the R-package ggplot2:
+
+```{r, message=FALSE}
+require(tidyverse)
+```
+
+
+```{r}
+xyCoord1Plot <- ggplot(data = xyCoord1, aes(x=xCoord, y=yCoord)) +
+  geom_point(color = "darkblue", size = 3) +
+  theme_minimal()
+print(xyCoord1Plot)
+
+```
+
+The blue scatters (hereafter refered to as nodes) presents each demand unit in the given problem, and three red nodes will be added after the algorithm has finished. 
+
+
+## 5. The Mathematical Model
+
+In this section we formulate the mixed integer program with the corresponding objective function for minimization of travelling distance. First, we display parameters (data inputs), then we present the decision variables to be altered optimally and applied to the final objective function with the a set of given constraints that are realistic to the application. 
+
+#### Parameters
+\
+\
+$n$ = number of demand units
+
+$m$ = number of distribution centers
+
+$XYD_{i}$ = xy-coordinate for demand unit *i*
+
+
+#### Decision variables:
+\
+\
+$A_{ij}$ = demand unit *i* assigned to the distribution center *j*
+
+$XYC_{j}$ = xy-coordinate for distribution center *i*
+
+
+#### Objective function:
+\
+\
+$$Min(\sum_{j=1}^{m} XYC_{j} - \sum_{i=1}^{n} XYD_{i}) $$
+\
+*Subject to:*
+\
+\
+$\\50 \ge XYC_{j} > 0\ $
+
+$A_{ij} \ge 1$
+
+$A_{ij} \le 3$
+
+$A_{ij} = integer$
+
+
+
+With the presented mixed integer program, we can run the evolutionary algorithm and dynamically optimize based on the chaning fitnesses of the individuals and the indivduals in relations to each other. Now, the the optimal mix of assigned demand units to distribution centers will be generated as we will inspect in the next chapter.
+
+## 6. Interpretation and Analysis of the Results
+
+The results obtained when running the mixed integer program yielded the following results 
+
+```{r, echo=FALSE}
+x <- c(11,42,27)
+y <- c(36,38,10)
+xyCoord2 <- cbind(x,y)
+xyCoord2 <- as.data.frame(xyCoord2)
+xyCoord2
+```
+
+In the figure below, the optimal locations are determined by the red nodes which correspond to the xy-coordinates given in the tables below. Under the viualization, there is an added table showing which distribution center is assigned to which demand unit. 
+
+
+```{r}
+xyCoord1$cat <- "Demand unit"
+xyCoord2$cat <- "DC"
+
+colnames(xyCoord2) <- c("xCoord", "yCoord", "category")
+colnames(xyCoord1) <- c("xCoord", "yCoord", "category")
+
+xyCoord3 <- rbind(xyCoord1, xyCoord2)
+
+xyCoord2Plot <- ggplot(data = xyCoord3, aes(x = xCoord, y = yCoord, color = category))+
+  geom_point(size = 3) +
+  theme_minimal()
+
+xyCoord2Plot + scale_color_manual(values = c("red","darkblue"))
+
+```
+
+
+
+
+Thus, when optimizing the mixed integer program we obtain the three positions for the distribtuin centers: [11,36], [42,39] and [27,10]. It should be noted that the third distribution center with the values [27,10] is placed on top of the 4th observation in the initial dataset due to it only operating with integer values.
+
+```{r, echo = FALSE}
+assignedDC <- c(1,3,1,3,3,3,2,2,1,1,3,3,2,2,1,3,1,1,1,2,2,3,2,2,2)
+xyCoordAssigned <- cbind(xCoord, yCoord, assignedDC)
+colnames(xyCoordAssigned) <- c("x Coord", "y Coord", "Assigned DC")
+xyCoordAssigned
+```
+
+
+## Final Remarks
+
+In this project, we optimized the position of 3 distribution centers on a 2-dimensional plane using the evolutionary algorithm on the constructed mixed integer program. The distance minimizing locations yielded the xy-coordinates;[11,36], [42,38] and [27,10]. Note that since this problem is integer-based, the distribution center with he placement [27,10] is placed on top of the 4th observation in the initial dataset. If the algorithm was to operate on more exact xy-coordinates with an increased number of decimals, the analysis would provide more precise results. 
+
+Going forward, this sort of problem could be extended to e.g. the travelling salesman problem, using the Google Maps API for real life applications for designing optimal supply chains and analyzing whether this optimal soultion is feasible in relation to regulations/other natural constraints. 
+
+## References
+
+Alberto Moraglio *Examples and Design of Evolutionary Algorithms* from *Introduction to Natural Computation*
+
+Curtis Frye *Using Solver for decision analysis* from *Lynda.com*
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+
+_Disclaimer: This is not an academic or commerical project, rather a way to wrap up my personal research on my repositories at www.Github.com/TellSol._
+
+
+
