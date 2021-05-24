@@ -38,6 +38,22 @@ o = [{'name':name, 'shadow price':c.pi}
     for name, c in model.constraints.items()]
 print(pd.DataFrame(o))
 
+# c)
+
+# generate sensitivity report from the GLPK-engine
+model.solve(plp.GLPK(options=['--ranges sensitivity.sen']))
+
+
+# Q: how much can c1 and c2 change for the optimal solution to remain the same?
+# A: x1 => [-3,3], x2 => [1,infinity)
+
+# d)
+
+# Q: how much can the RHS constraint coefficients change without affecting the shadow prices
+# A: c1 => [4,16], c2 => [-4,8], c3 => [2,infinity)
+
+
+
 
 
 
